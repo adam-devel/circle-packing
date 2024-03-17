@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import * as d3 from 'd3';
+import "./CellVisualisation2.css"
 
-const CellVisualisation = ({ width, height, data }) => {
+const CellVisualisation = ({ color, data }) => {
+
   const svgRef = useRef();
-  const [_, setOldCircles] = useState([]);
-
   const colors = [
     '#F4538A', // Base color 1
     '#FAA300', // Base color 2
@@ -14,60 +14,50 @@ const CellVisualisation = ({ width, height, data }) => {
     '#59D5E0' // Base color 4
   ]
 
+  const svg = d3.select(svgRef.current);
+  const circleSize = 10;
+  const height = 200;
+  const width = 200;
 
-  useEffect(() => {
-    if (!svgRef.current || !data) return;
+  const root = d3.hierarchy({ children: data })
+    //.sum((d) => 50 + 20 * (d.children !== null ? d.children.length : 0))
+    .sum((d) => circleSize + 4 * (d.children !== null ? d.children.length : 0))
+    .sort((a, b) => b.value - a.value)
+  const pack = d3.pack()
+    .size([width, height])
+    .padding(2); // Adjust padding here
 
-    const svg = d3.select(svgRef.current);
+  const packedData = pack(root).descendants();
 
-    const circleSize = 30;
-    const padding = 10;
-
-    const updateChart = (newData) => {
-      const root = d3.hierarchy({ children: newData })
-        //.sum((d) => 50 + 20 * (d.children !== null ? d.children.length : 0))
-        .sum((d) => circleSize + 4 * (d.children !== null ? d.children.length : 0))
-        .sort((a, b) => b.value - a.value)
-      const pack = d3.pack()
-        .size([width, height])
-        .padding(2); // Adjust padding here
-
-      const packedData = pack(root).descendants();
-
-      svg.selectAll('.circle').remove();
-      svg.selectAll('.text').remove();
+  svg.selectAll('.circle').remove();
+  svg.selectAll('.text').remove();
 
 
 
-      packedData.forEach((d, i) => {
-        if (i == 0 || isNaN(d.x) || isNaN(d.y) || isNaN(d.r)) { return; }
-        svg.append('circle')
-          .attr('class', 'circle')
-          .attr('cx', d.x)
-          .attr('cy', d.y)
-          .attr('r', d.value)
-          .attr('fill', colors[i % colors.length]) // Use one of the predefined colors
+  packedData.forEach((d, i) => {
+    if (i == 0 || isNaN(d.x) || isNaN(d.y) || isNaN(d.r)) { return; }
+    svg.append('circle')
+      .attr('class', 'circle')
+      .attr('cx', d.x)
+      .attr('cy', d.y)
+      .attr('r', d.value)
+      .attr('fill', colors[i % colors.length]) // Use one of the predefined colors
 
 
-        svg.append('text') // Add text inside the circle
-          .attr("text-anchor", "middle")
+    svg.append('text') // Add text inside the circle
+      .attr("text-anchor", "middle")
 
-          .style("font", "10px sans-serif")
-          .attr('x', d.x)
-          .attr('y', (d.children) ? d.y - d.r + (d.children.length) * 20 : d.y)
-          .attr('text-anchor', 'middle')
-          .attr('dy', '0.35em')
-          .text(`Cellule ${d.data.label.replace('Cell ', '')}`);
-      });
-
-    };
-
-    updateChart(data);
-
-  }, [data, height, width]);
+      .style("font", "10px sans-serif")
+      .attr('x', d.x)
+      .attr('y', (d.children) ? d.y - d.r + (d.children.length) * 2 : d.y)
+      .attr('text-anchor', 'middle')
+      .attr('dy', '0.35em')
+      .text(`value: ${d.value}`)
+      //.text(`Cellule ${d.data.label.replace('Cell ', '')}`);
+  });
 
   return (
-    <svg ref={svgRef} width={width} height={height}>
+    <svg className="visualization" ref={svgRef} viewBox={`0 0 ${width} ${height}`}>
       {data.map((circle, index) => (
         <circle
           key={index}

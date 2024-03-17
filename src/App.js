@@ -1,15 +1,14 @@
-import React, { useEffect, useState } from 'react';
+//import "primeflex/primeflex.css";
+//import "primereact/resources/primereact.min.css";
+//import "primereact/resources/themes/lara-light-indigo/theme.css";
+//import Keycloak from 'keycloak-js';
 import axios from 'axios';
-import Header from './Components/Header';
-import CellVisualisation2 from './Components/CellVisualisation2';
-import CellVisualisation from './Components/CellVisualisation';
 import './App.css';
-import "primereact/resources/themes/lara-light-indigo/theme.css";
-import "primereact/resources/primereact.min.css";
-import "primeflex/primeflex.css";
-import Keycloak from 'keycloak-js';
+import CellVisualisation from './Components/CellVisualisation';
+import CellVisualisation2 from './Components/CellVisualisation2';
+import Header from './Components/Header';
+import React, { useEffect, useState } from 'react';
 import SearchBar from './Components/SearchBar';
-
 /*
 const keycloakInitOptions = {
   url: 'http://localhost:8080/',
@@ -37,99 +36,73 @@ const App = () => {
   const [data, setData] = useState([]);
 
   useEffect(() => {
-    fetchData();
+    //fetchData().then((rawData) => {
+    fetchFakeData().then((rawData) => {
+      const d3Data = rawToD3(rawData)
+      setData(d3Data);
+    })
+    const rawToD3 = (dataArray) => {
+      if (dataArray.length == 0) { return null }
+      const first = dataArray.splice(0, 1)[0];
+      let acc = [{
+        label: first.label,
+        children: first.delegatedCells ? rawToD3(first.delegatedCells) : null
+      }];
+      return acc.concat(rawToD3(dataArray) ?? []);
+    }
   }, []);
 
   const fetchData = async () => {
+    let response = null;
     try {
-      //const response = await axios.get('http://localhost:5051/cells/all');
-      //const fetchedData = response.data;
-      const fetchedData = [
+      response = await axios.get('http://localhost:5051/cells/all');
+    } catch (error) {
+      console.error('Error fetching data: ', error);
+    }
+    return response.data;
+  }
 
+  const fetchFakeData = async () => [
+    {
+      "label": "Super",
+      "delegatedCells": [
         {
-          "label": "SuperCellule",
-          "purpose": "Objectif de la cellule déléguante",
-          "core_buisness": "Activité principale de la cellule déléguante",
-          "type": "Normal",
-          "delegatedCells": [{
-            "label": "RH",
-            "purpose": "Objectif de la cellule déléguante",
-            "core_buisness": "Activité principale de la cellule déléguante",
-            "type": "Normal",
-            "delegatedCells": [
-              {
-                "label": "stage",
-                "purpose": "Objectif de la cellule déléguante",
-                "core_buisness": "Activité principale de la cellule déléguante",
-                "type": "Normal",
-                "delegatedCells": [
-
-                ],
-              },
-              {
-                "label": "Rec",
-                "purpose": "Objectif de la cellule déléguante",
-                "core_buisness": "Activité principale de la cellule déléguante",
-                "type": "Normal",
-                "delegatedCells": [],
-              }
-            ],
-          },
-          {
-            "label": "enjoy",
-            "purpose": "Objectif de la cellule déléguante",
-            "core_buisness": "Activité principale de la cellule déléguante",
-            "type": "Normal",
-            "delegatedCells": [{
-              "label": "test",
-              "purpose": "Objectif de la cellule déléguante",
-              "core_buisness": "Activité principale de la cellule déléguante",
-              "type": "Normal",
+          "label": "RH",
+          "delegatedCells": [
+            {
+              "label": "stage",
               "delegatedCells": [],
-              "id": "09a47f9f-04a6-4188-9bbf-753b1a663b13"
-            }],
-            "id": "09a47f9f-04a6-4188-9bbf-753b1a663b13"
-          },
-          {
-            "label": "Com",
-            "purpose": "Objectif de la cellule déléguante",
-            "core_buisness": "Activité principale de la cellule déléguante",
-            "type": "Normal",
-            "delegatedCells": [],
-          }],
-          "id": "bf1d93a3-1f74-4323-9e48-d98f24a1f482"
+            },
+            {
+              "label": "Rec",
+              "delegatedCells": [],
+            }
+          ],
         },
         {
-          "label": "encrage",
-          "purpose": "Objectif de la cellule déléguante",
-          "core_buisness": "Activité principale de la cellule déléguante",
-          "type": "Normal",
-          "delegatedCells": [],
+          "label": "enjoy",
+          "delegatedCells": [
+            {
+              "label": "test",
+              "delegatedCells": [],
+              "id": "09a47f9f-04a6-4188-9bbf-753b1a663b13"
+            }
+          ],
           "id": "09a47f9f-04a6-4188-9bbf-753b1a663b13"
+        },
+        {
+          "label": "Com",
+          "delegatedCells": [],
         }
-
-      ]
-
-      //const newData = fetchedData.map(item => ({ r: 20, label: item.label, children: item.delegatedCells }));
-      const newData = walk(fetchedData)
-      console.log(newData)
-      function walk(arr) {
-        if (arr.length == 0) { return null }
-        const acc = []
-        const elt = arr.splice(0, 1)[0];
-        acc.push({
-          label: elt.label,
-          children: elt.delegatedCells ? walk(elt.delegatedCells) : null
-        });
-        const res = walk(arr)
-        return acc.concat(res == null ? [] : res);
-      }
-      setData(newData);
-    } catch (error) {
-      console.error('Error fetching data:', error);
+      ],
+      "id": "bf1d93a3-1f74-4323-9e48-d98f24a1f482"
+    },
+    {
+      "label": "encrage",
+      "delegatedCells": [],
+      "id": "09a47f9f-04a6-4188-9bbf-753b1a663b13"
     }
-  };
-
+  ]
   const addCircleInside = (rootCell, label) => {
     const circleIndex = data.findIndex(circle => circle.label === rootCell);
     if (circleIndex == -1) { return }
@@ -148,19 +121,11 @@ const App = () => {
 
   };
 
-  window.add = addCircleInside;
-
   return (
     <div className="App">
       <Header />
-      <div style={{ padding: '20px', color: 'blue' }}>
-        <br></br><br></br>
-        <SearchBar /><br></br><br></br><br></br>
-        <CellVisualisation2 width={1400} height={500} data={data} />
-        <CellVisualisation width={1400} height={500} data={data} />
-        <button onClick={() => addCircleInside('YourLabel')}>Add Circle</button>
-
-      </div>
+      <SearchBar />
+      <CellVisualisation2 color="#023047" data={data} />
     </div>
   );
 };
