@@ -1,74 +1,155 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import "./CellVisualisation2.css"
 
-const CellVisualisation = ({ color, data }) => {
 
+const CellVisualisation = ({ data, padding, margin }) => {
+  debugger;
+
+  /*** @type React.MutableRefObject<SVGElement> */
   const svgRef = useRef();
-  const colors = [
-    '#F4538A', // Base color 1
-    '#FAA300', // Base color 2
-    '#F9B721', '#F8C042', '#F7CD63', '#F6D784', '#F5E3A5', '#F4EEC6', '#F3F9E7', '#EEFAEF', '#E9F8EA', '#E4F6E5', '#DFF4E0', // Interpolated colors between base color 2 and base color 3
-    '#F5DD61', // Base color 3
-    '#91CCBB', '#88C6B3', '#7FBFAB', '#76B9A3', '#6DB29B', '#64AC93', '#5BA68B', '#52A083', '#499A7B', '#409474', '#379E6C', // Interpolated colors between base color 3 and base color 4
-    '#59D5E0' // Base color 4
-  ]
 
-  const svg = d3.select(svgRef.current);
-  const circleSize = 10;
-  const height = 200;
-  const width = 200;
+  useEffect(() => {
+    if (svgRef.current) {
+      // Retrieve svg dimensions
+      const box = svgRef.current.getBoundingClientRect();
+      const size = Math.min(box.width, box.height)
+      // Render
+      render(svgRef.current, size);
+    }
+    return () => cleanup(svgRef);
+  }, [data, padding])
 
-  const root = d3.hierarchy({ children: data })
-    //.sum((d) => 50 + 20 * (d.children !== null ? d.children.length : 0))
-    .sum((d) => circleSize + 4 * (d.children !== null ? d.children.length : 0))
-    .sort((a, b) => b.value - a.value)
-  const pack = d3.pack()
-    .size([width, height])
-    .padding(2); // Adjust padding here
+  function render(svg, size) {
+    // Construct a D3 hierarchy
+    const hierarchy = d3.hierarchy(data);
 
-  const packedData = pack(root).descendants();
+    // Compute the layout for the hierarchy
+    hierarchy
+      .sum(d => d.label ? 100 : 0)
+      .sort((a, b) => b.value - a.value)
 
-  svg.selectAll('.circle').remove();
-  svg.selectAll('.text').remove();
+    const packer = d3.pack()
+    packer.size([size, size])
+    packer.padding(padding)
+    const root = packer(hierarchy);
 
+    // Configure the SVG container.
+    const d3Svg = d3.select(svg)
+      .attr("viewBox", `0 0 ${size} ${size}`)
+      .attr("height", size)
+      .attr("width", size)
+    //.attr("style", `background: ${color(0)}; cursor: pointer;`);
 
+    // Append the nodes.
+    const circles_group = d3Svg
+    //  .append("g")
+    //  .selectAll("circle")
+    //  .data(root.descendants())
+    //  .join("circle")
+    //    .attr("fill", d => d.children ? color(d.depth) : "white")
+    //    .attr("pointer-events", d => !d.children ? "none" : null)
+    //    .on("mouseover", function() { d3.select(this).attr("stroke", "#000"); })
+    //    .on("mouseout", function() { d3.select(this).attr("stroke", null); })
+    //    .on("click", (event, d) => focus !== d && (zoom(event, d), event.stopPropagation()));
 
-  packedData.forEach((d, i) => {
-    if (i == 0 || isNaN(d.x) || isNaN(d.y) || isNaN(d.r)) { return; }
-    svg.append('circle')
-      .attr('class', 'circle')
-      .attr('cx', d.x)
-      .attr('cy', d.y)
-      .attr('r', d.value)
-      .attr('fill', colors[i % colors.length]) // Use one of the predefined colors
+    //// Append the text labels.
+    const labels_group = d3Svg
+    //  .append("g")
+    //  .selectAll("text")
+    //  .data(root)
+    //  .join("text")
+    //  .style("font", "12px sans-serif")
+    //  .attr("pointer-events", "none")
+    //  .attr("text-anchor", "middle")
+    //  .style("fill-opacity", d => d.parent === root ? 1 : 0)
+    //  .style("fill-opacity", d => d.parent === root ? 1 : 0)
+    //  .style("display", d => d.parent === root ? "inline" : "none")
+    //  .text(d => d.data.label);
 
+    const colors = [
+      '#ccd5ae',
+      '#e9edc9',
+      '#fefae0',
+      '#faedcd',
+      '#d4a373',
+    ]
 
-    svg.append('text') // Add text inside the circle
-      .attr("text-anchor", "middle")
+    // position
+    root.descendants().forEach(node => {
+      const { x, y } = node;
+      const gd3 = d3Svg.append('g')
+        .attr("transform", `translate(${x}, ${y})`)
+      if (node.data.label) {
+        //gd3.append("circle")
+        //  .attr("r", node.r)
+        //  .attr("fill", colors[node.depth])
+        //  .attr("stroke", "#0000004f")
+        //  .attr("stroke-width", "1px")
+        //  .attr("class", "circle")
+        const rect = gd3.append("rect")
+        const text = gd3.append("text")
+          .attr("text-anchor", "middle")
+          .attr("alignment-baseline", "middle")
+          .style("font", "10px sans-serif")
+          .attr("y", d.children ? d.y - d.r + d.children.length()*18 : d.y)
+          .text(node.data.label);
+        //const bbox = text.node().getBBox()
+        //rect.attr('width', bbox.width)
+        //  .attr('height', bbox.height)
+        //  .attr('x', bbox.x)
+        //  .attr('y', bbox.y)
+        //  .attr('fill', 'red')
+      } else {
+        gd3.append("circle")
+          .attr("r", node.r)
+          .attr("fill", colors[node.depth])
+          .attr("stroke", "#0000004f")
+          .attr("stroke-width", "1px")
+          .attr("class", "circle")
+      }
+    })
 
-      .style("font", "10px sans-serif")
-      .attr('x', d.x)
-      .attr('y', (d.children) ? d.y - d.r + (d.children.length) * 2 : d.y)
-      .attr('text-anchor', 'middle')
-      .attr('dy', '0.35em')
-      .text(`value: ${d.value}`)
-      //.text(`Cellule ${d.data.label.replace('Cell ', '')}`);
-  });
+    // Create the zoom behavior and zoom immediately in to the initial focus node.
+    d3Svg.on("click", (event) => zoom(event, root));
+    let focus = root;
+    let view;
+    //zoomTo(focus);
 
+    function zoomTo({ x, y, r }) {
+      const k = size / r;
+
+      //labels_group.attr("transform", d => `translate(${(d.x - x) * k},${(d.y - y) * k})`);
+      //circles_group.attr("transform", d => `translate(${(d.x - x) * k},${(d.y - y) * k})`);
+      //circles_group.attr("r", d => d.r * k);
+    }
+
+    function zoom(event, d) {
+
+      focus = d;
+
+      const transition = d3Svg.transition()
+        .duration(event.altKey ? 7500 : 750)
+        .tween("zoom", d => {
+          const i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2]);
+          return t => zoomTo(i(t));
+        });
+
+      labels_group
+        .filter(function(d) { return d.parent === focus || this.style.display === "inline"; })
+        .transition(transition)
+        .style("fill-opacity", d => d.parent === focus ? 1 : 0)
+        .on("start", function(d) { if (d.parent === focus) this.style.display = "inline"; })
+        .on("end", function(d) { if (d.parent !== focus) this.style.display = "none"; });
+    }
+  }
+  /*** @param {SVGElement} svg */
+  function cleanup(svgRef) {
+    if (!svgRef.current) return;
+    svgRef.current.querySelectorAll('*').forEach((n) => n.remove());
+  }
   return (
-    <svg className="visualization" ref={svgRef} viewBox={`0 0 ${width} ${height}`}>
-      {data.map((circle, index) => (
-        <circle
-          key={index}
-          className="circle"
-          cx={circle.x}
-          cy={circle.y}
-          r={circle.r}
-          fill={colors[index % colors.length]}
-        />
-      ))}
-    </svg>
+    <svg className="visualization" ref={svgRef}> </svg>
   );
 };
 

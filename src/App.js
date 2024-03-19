@@ -33,22 +33,28 @@ keycloak.init({
 });
 */
 const App = () => {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState(null);
 
   useEffect(() => {
     //fetchData().then((rawData) => {
-    fetchFakeData().then((rawData) => {
-      const d3Data = rawToD3(rawData)
-      setData(d3Data);
+    fetchFakeData2().then((rawData) => {
+      const d3Data = rawData.map(rawToD3)
+      setData({
+        children: [
+          ...d3Data,
+          { label: "super cell" },
+        ]
+      });
     })
-    const rawToD3 = (dataArray) => {
-      if (dataArray.length == 0) { return null }
-      const first = dataArray.splice(0, 1)[0];
-      let acc = [{
-        label: first.label,
-        children: first.delegatedCells ? rawToD3(first.delegatedCells) : null
-      }];
-      return acc.concat(rawToD3(dataArray) ?? []);
+    function rawToD3(jsonData) {
+      const sub = jsonData.delegatedCells;
+      if (!sub || sub.length === 0) {
+        return { children: [{ label: jsonData.label }] }
+      }
+      return {
+        children: sub.map(rawToD3)
+          .concat([{ label: jsonData.label }])
+      };
     }
   }, []);
 
@@ -62,6 +68,139 @@ const App = () => {
     return response.data;
   }
 
+  async function fetchFakeData2() {
+    return [
+      {
+        "label": "Clothing Stores",
+        "delegatedCells": [
+          {
+            "label": "Men's Clothes",
+            "delegatedCells": [
+              {
+                "label": "Shirts",
+                "delegatedCells": []
+              },
+              {
+                "label": "Pants",
+                "delegatedCells": []
+              }
+            ]
+          },
+          {
+            "label": "Women's Clothes",
+            "delegatedCells": [
+              {
+                "label": "Dresses",
+                "delegatedCells": []
+              },
+              {
+                "label": "Skirts",
+                "delegatedCells": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "label": "Electronics Stores",
+        "delegatedCells": [
+          {
+            "label": "Computers",
+            "delegatedCells": [
+              {
+                "label": "Laptops",
+                "delegatedCells": []
+              },
+              {
+                "label": "Desktops",
+                "delegatedCells": []
+              }
+            ]
+          },
+          {
+            "label": "Smartphones",
+            "delegatedCells": [
+              {
+                "label": "Android Phones",
+                "delegatedCells": []
+              },
+              {
+                "label": "iPhones",
+                "delegatedCells": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+
+
+  const fetchFakeData3 = async () => [
+    {
+      "label": "Super",
+      "delegatedCells": [
+        {
+          "label": "stage",
+          "delegatedCells": [],
+        },
+        {
+          "label": "Rec",
+          "delegatedCells": [],
+        },
+        {
+          "label": "stage",
+          "delegatedCells": [],
+        },
+        {
+          "label": "Rec",
+          "delegatedCells": [],
+        },
+        {
+          "label": "stage",
+          "delegatedCells": [],
+        },
+        {
+          "label": "Rec",
+          "delegatedCells": [],
+        },
+        {
+          "label": "RH",
+          "delegatedCells": [
+            {
+              "label": "stage",
+              "delegatedCells": [],
+            },
+            {
+              "label": "Rec",
+              "delegatedCells": [],
+            }
+          ],
+        },
+        {
+          "label": "enjoy",
+          "delegatedCells": [
+            {
+              "label": "test",
+              "delegatedCells": [],
+              "id": "09a47f9f-04a6-4188-9bbf-753b1a663b13"
+            }
+          ],
+          "id": "09a47f9f-04a6-4188-9bbf-753b1a663b13"
+        },
+        {
+          "label": "Com",
+          "delegatedCells": [],
+        }
+      ],
+      "id": "bf1d93a3-1f74-4323-9e48-d98f24a1f482"
+    },
+    {
+      "label": "encrage",
+      "delegatedCells": [],
+      "id": "09a47f9f-04a6-4188-9bbf-753b1a663b13"
+    }
+  ]
   const fetchFakeData = async () => [
     {
       "label": "Super",
@@ -103,29 +242,15 @@ const App = () => {
       "id": "09a47f9f-04a6-4188-9bbf-753b1a663b13"
     }
   ]
-  const addCircleInside = (rootCell, label) => {
-    const circleIndex = data.findIndex(circle => circle.label === rootCell);
-    if (circleIndex == -1) { return }
-
-    const newCircleSize = Math.random() * 10 + 5;
-    const newCircle = { r: newCircleSize, label, color: '#f17300' };
-
-    setData(prevData => {
-      const newData = [...prevData];
-      if (!newData[circleIndex].children) {
-        newData[circleIndex].children = [];
-      }
-      newData[circleIndex].children.push(newCircle);
-      return newData;
-    });
-
-  };
 
   return (
     <div className="App">
       <Header />
       <SearchBar />
-      <CellVisualisation2 color="#023047" data={data} />
+      {data == null
+        ? <></>
+        : <CellVisualisation2 data={data} padding={10} margin={10} />
+      }
     </div>
   );
 };

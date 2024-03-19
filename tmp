@@ -1,0 +1,59 @@
+import React, { useRef } from 'react';
+import * as d3 from 'd3';
+import "./CellVisualisation2.css"
+
+const CellVisualisation = ({ color, data }) => {
+  const svgRef = useRef();
+  const svg = d3.select(svgRef.current);
+
+  const height = 200;
+  const width = 200;
+
+  const root = d3.hierarchy({ children: data })
+    //.sum((d) => 50 + 20 * (d.children !== null ? d.children.length : 0))
+    //.sort((a, b) => b.value - a.value)
+  const pack = d3.pack()
+    .size([width, height])
+    .padding(2); // Adjust padding here
+
+  const packedData = pack(root).descendants();
+
+  packedData.forEach((d, i) => {
+    if (i == 0 || isNaN(d.x) || isNaN(d.y) || isNaN(d.r)) { return; }
+    svg.append('circle')
+      .attr('class', 'circle')
+      .attr('cx', d.x)
+      .attr('cy', d.y)
+      .attr('r', d.value)
+      .attr('fill', colors[i % colors.length]) // Use one of the predefined colors
+
+
+    svg.append('text') // Add text inside the circle
+      .attr("text-anchor", "middle")
+
+      .style("font", "10px sans-serif")
+      .attr('x', d.x)
+      .attr('y', (d.children) ? d.y - d.r + (d.children.length) * 2 : d.y)
+      .attr('text-anchor', 'middle')
+      .attr('dy', '0.35em')
+      .text(`depth: ${d.value}`)
+    //.text(`Cellule ${d.data.label.replace('Cell ', '')}`);
+  });
+
+  return (
+    <svg className="visualization" ref={svgRef} viewBox={`0 0 ${width} ${height}`}>
+      {data.map((circle, index) => (
+        <circle
+          key={index}
+          className="circle"
+          cx={circle.x}
+          cy={circle.y}
+          r={circle.r}
+          fill={colors[index % colors.length]}
+        />
+      ))}
+    </svg>
+  );
+};
+
+export default CellVisualisation;
