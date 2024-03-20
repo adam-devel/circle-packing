@@ -4,7 +4,6 @@ import "./CellVisualisation2.css"
 
 
 const CellVisualisation = ({ data, padding, margin }) => {
-  debugger;
 
   /*** @type React.MutableRefObject<SVGElement> */
   const svgRef = useRef();
@@ -26,11 +25,14 @@ const CellVisualisation = ({ data, padding, margin }) => {
 
     // Compute the layout for the hierarchy
     hierarchy
-      .sum(d => d.label ? 100 : 0)
+      .sum(_ => 1)
       .sort((a, b) => b.value - a.value)
 
     const packer = d3.pack()
     packer.size([size, size])
+    packer.radius((d) => {
+      return 1 + 4 ** (hierarchy.height - d.depth)
+    })
     packer.padding(padding)
     const root = packer(hierarchy);
 
@@ -81,32 +83,43 @@ const CellVisualisation = ({ data, padding, margin }) => {
       const gd3 = d3Svg.append('g')
         .attr("transform", `translate(${x}, ${y})`)
       if (node.data.label) {
-        //gd3.append("circle")
-        //  .attr("r", node.r)
-        //  .attr("fill", colors[node.depth])
-        //  .attr("stroke", "#0000004f")
-        //  .attr("stroke-width", "1px")
-        //  .attr("class", "circle")
-        const rect = gd3.append("rect")
+        //const rect = gd3.append("rect")
         const text = gd3.append("text")
+        text.attr("class", "text")
+        text
           .attr("text-anchor", "middle")
           .attr("alignment-baseline", "middle")
-          .style("font", "10px sans-serif")
-          .attr("y", d.children ? d.y - d.r + d.children.length()*18 : d.y)
+          .attr("clip-path", `circle(${node.parent.r})`)
+          .style("font", `${Math.log(node.r + 16) * 2}pt sans-serif`)
           .text(node.data.label);
         //const bbox = text.node().getBBox()
-        //rect.attr('width', bbox.width)
-        //  .attr('height', bbox.height)
-        //  .attr('x', bbox.x)
-        //  .attr('y', bbox.y)
-        //  .attr('fill', 'red')
+        //const marginY = 4
+        //const marginX = 6
+        //rect.attr('width', bbox.width + marginX * 2)
+        //  .attr('height', bbox.height + marginY * 2)
+        //  .attr('x', bbox.x - marginX)
+        //  .attr('y', bbox.y - marginY)
+        //  .attr('rx', marginX)
+        //  .attr("clip-path", `circle(${node.parent.r})`)
+        //  .attr('fill', '#ffffff80')
+        //  .attr('stroke', '#00000080')
       } else {
-        gd3.append("circle")
+        const circle = gd3.append("circle");
+        circle.attr("class", "circle")
+        circle
           .attr("r", node.r)
           .attr("fill", colors[node.depth])
           .attr("stroke", "#0000004f")
           .attr("stroke-width", "1px")
           .attr("class", "circle")
+          .on("mouseover", function() { circle.attr("stroke", "#000"); })
+          .on("mouseout", function() { circle.attr("stroke", "#0000004f"); })
+          .on("click", (event) => {
+            if (focus !== circle) {
+              zoom(event, circle);
+              event.stopPropagation()
+            }
+          });
       }
     })
 
@@ -116,16 +129,22 @@ const CellVisualisation = ({ data, padding, margin }) => {
     let view;
     //zoomTo(focus);
 
-    function zoomTo({ x, y, r }) {
+    function zoomTo(v) {
+      debugger
+      view = v
+      const { x, y, r } = v;
       const k = size / r;
+      d3Svg
+        .selectAll("g").data(root.descendants())
+        .attr("transform", d => `translate(${(d.x - x) * k},${(d.y - y) * k})`)
 
-      //labels_group.attr("transform", d => `translate(${(d.x - x) * k},${(d.y - y) * k})`);
-      //circles_group.attr("transform", d => `translate(${(d.x - x) * k},${(d.y - y) * k})`);
-      //circles_group.attr("r", d => d.r * k);
+      d3Svg
+        .selectAll("circle")
+        .data(root.descendants())
+        .attr("r", d => { debugger; return d.r * k });
     }
 
     function zoom(event, d) {
-
       focus = d;
 
       const transition = d3Svg.transition()
@@ -135,12 +154,12 @@ const CellVisualisation = ({ data, padding, margin }) => {
           return t => zoomTo(i(t));
         });
 
-      labels_group
-        .filter(function(d) { return d.parent === focus || this.style.display === "inline"; })
-        .transition(transition)
-        .style("fill-opacity", d => d.parent === focus ? 1 : 0)
-        .on("start", function(d) { if (d.parent === focus) this.style.display = "inline"; })
-        .on("end", function(d) { if (d.parent !== focus) this.style.display = "none"; });
+      //labels_group
+      //  .filter(function(d) { return d.parent === focus || this.style.display === "inline"; })
+      //  .transition(transition)
+      //  .style("fill-opacity", d => d.parent === focus ? 1 : 0)
+      //  .on("start", function(d) { if (d.parent === focus) this.style.display = "inline"; })
+      //  .on("end", function(d) { if (d.parent !== focus) this.style.display = "none"; });
     }
   }
   /*** @param {SVGElement} svg */
